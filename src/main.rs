@@ -1,6 +1,7 @@
 use std::fmt;
+use std::io;
 
-const BOARD_SIZE: usize = 5;
+const BOARD_SIZE: usize = 3; // ボードの大きさを3x3に変更してマルバツゲーム向け
 
 #[derive(Clone, Copy, PartialEq)]
 enum CellState {
@@ -23,8 +24,8 @@ impl fmt::Display for CellState {
 
 #[derive(Clone, Copy)]
 enum Player {
-    Black,
-    White,
+    Black, // X
+    White, // O
 }
 
 impl Player {
@@ -56,14 +57,12 @@ impl Board {
         }
     }
 
-    // セルの状態を設定するだけの関数
     fn set_cell_state(&mut self, x: usize, y: usize, state: CellState) {
         if x < BOARD_SIZE && y < BOARD_SIZE {
             self.grid[y][x] = state;
         }
     }
 
-    // プレイヤーが手番を行うラッパー関数
     fn take_turn(&mut self, x: usize, y: usize) -> bool {
         if x < BOARD_SIZE && y < BOARD_SIZE && self.grid[y][x] == CellState::Empty {
             self.set_cell_state(x, y, self.current_player.marker());
@@ -86,17 +85,70 @@ impl Board {
             Player::White => "White (O)",
         });
     }
+
+    fn check_winner(&self) -> Option<Player> {
+        let lines = [
+            // Rows
+            [(0, 0), (0, 1), (0, 2)],
+            [(1, 0), (1, 1), (1, 2)],
+            [(2, 0), (2, 1), (2, 2)],
+            // Columns
+            [(0, 0), (1, 0), (2, 0)],
+            [(0, 1), (1, 1), (2, 1)],
+            [(0, 2), (1, 2), (2, 2)],
+            // Diagonals
+            [(0, 0), (1, 1), (2, 2)],
+            [(0, 2), (1, 1), (2, 0)],
+        ];
+        
+        for &line in &lines {
+            let [a, b, c] = line;
+            if self.grid[a.1][a.0] != CellState::Empty
+                && self.grid[a.1][a.0] == self.grid[b.1][b.0]
+                && self.grid[a.1][a.0] == self.grid[c.1][c.0]
+            {
+                return Some(match self.grid[a.1][a.0] {
+                    CellState::Black => Player::Black,
+                    CellState::White => Player::White,
+                    _ => unreachable!(),
+                });
+            }
+        }
+        None
+    }
 }
 
 fn main() {
     let mut board = Board::new();
-    
-    // デモ: プレイヤー交互に手を打つ
-    board.take_turn(2, 2);
-    board.take_turn(3, 3);
-    board.take_turn(1, 1);
-    board.take_turn(0, 0);
+    let mut input = String::new();
 
-    // ボードを表示
-    board.display();
+    loop {
+        board.display();
+        println!("Enter your move as 'x y': ");
+        input.clear();
+        io::stdin().read_line(&mut input).expect("Failed to read input");
+        let coords: Vec<usize> = input
+            .trim()
+            .split_whitespace()
+            .filter_map(|x| x.parse::<usize>().ok())
+            .collect();
+        
+        if coords.len() == 2 {
+            let (x, y) = (coords[0], coords[1]);
+            if board.take_turn(x, y) {
+                if let Some(winner) = board.check_winner() {
+                    board.display();
+                    println!("{} wins!", match winner {
+                        Player::Black => "Black (X)",
+                        Player::White => "White (O)",
+                    });
+                    break;
+                }
+            } else {
+                println!("Invalid move, try again!");
+            }
+        } else {
+            println!("Invalid input, please enter two numbers separated by space!");
+        }
+    }
 }
