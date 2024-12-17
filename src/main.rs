@@ -118,23 +118,29 @@ impl Board {
     }
 }
 
+fn get_user_input() -> Option<(usize, usize)> {
+    let mut input = String::new();
+    println!("Enter your move as 'x y': ");
+    io::stdin().read_line(&mut input).expect("Failed to read input");
+    let coords: Vec<usize> = input
+        .trim()
+        .split_whitespace()
+        .filter_map(|x| x.parse::<usize>().ok())
+        .collect();
+    
+    if coords.len() == 2 {
+        Some((coords[0], coords[1]))
+    } else {
+        None
+    }
+}
+
 fn main() {
     let mut board = Board::new();
-    let mut input = String::new();
 
     loop {
         board.display();
-        println!("Enter your move as 'x y': ");
-        input.clear();
-        io::stdin().read_line(&mut input).expect("Failed to read input");
-        let coords: Vec<usize> = input
-            .trim()
-            .split_whitespace()
-            .filter_map(|x| x.parse::<usize>().ok())
-            .collect();
-        
-        if coords.len() == 2 {
-            let (x, y) = (coords[0], coords[1]);
+        if let Some((x, y)) = get_user_input() {
             if board.take_turn(x, y) {
                 if let Some(winner) = board.check_winner() {
                     board.display();
