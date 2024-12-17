@@ -1,6 +1,6 @@
 use std::fmt;
 
-pub const BOARD_SIZE: usize = 3;
+pub const BOARD_SIZE: usize = 7;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum CellState {
